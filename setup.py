@@ -3,7 +3,7 @@ from os.path import join, dirname
 from setuptools import setup, find_packages
 
 
-version = __import__('admin_model_report').__version__
+version = __import__('model_report').__version__
 
 
 LONG_DESCRIPTION = """
