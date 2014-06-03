@@ -10,7 +10,7 @@
                 <li><input type="submit" class="query" value='{{ submit_label|default:_("Generate Report") }}'></li>
                 {% if report_rows %}
                 {% for export in report.exports %}
-                <li><input type="submit" class="{{ export }}" name="export" value="{{ export }}"></li>
+                <li><input type="submit" class="{{ export }}" name="{{ export }}" value="Export as {{ export|title }}"></li>
                 {% endfor %}
                 <li class="grp-float-left"><input type="button" class="grp-button grp-delete-link print" onclick="javascript:window.print()" value='{{ submit_label|default:_("Print") }}'></li>
                 {% endif %}

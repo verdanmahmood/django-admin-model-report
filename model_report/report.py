@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import copy
-from xlwt import Workbook, easyxf
 from itertools import groupby
 
+from xlwt import Workbook, easyxf
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -22,8 +22,6 @@ from model_report.utils import base_label, ReportValue, ReportRow
 from model_report.highcharts import HighchartRender
 from model_report.widgets import RangeField
 from model_report.export_pdf import render_to_pdf
-
-
 import arial10
 
 
@@ -37,6 +35,7 @@ class FitSheetWrapper(object):
     The worksheet interface remains the same: this is a drop-in wrapper
     for auto-sizing columns.
     """
+
     def __init__(self, sheet):
         self.sheet = sheet
         self.widths = dict()
@@ -127,7 +126,6 @@ class ReportClassManager(object):
 
 reports = ReportClassManager()
 
-
 _cache_class = {}
 
 
@@ -138,6 +136,7 @@ def cache_return(fun):
     Caching method returns gets in the way of customization at the implementation level
     now that report instances can be modified based on request data.
     """
+
     def wrap(self, *args, **kwargs):
         cache_field = '%s_%s' % (self.__class__.__name__, fun.func_name)
         if cache_field in _cache_class:
@@ -145,6 +144,7 @@ def cache_return(fun):
         result = fun(self, *args, **kwargs)
         _cache_class[cache_field] = result
         return result
+
     return wrap
 
 
@@ -161,10 +161,10 @@ class ReportAdmin(object):
 
     list_filter = ()
     """List of fields or lookup fields to filter data."""
-    
+
     list_filter_widget = {}
     """Widget for list filter field"""
-    
+
     list_filter_queryset = {}
     """ForeignKey custom queryset"""
 
@@ -276,9 +276,12 @@ class ReportAdmin(object):
         self.model_fields = model_fields
         self.model_m2m_fields = model_m2m_fields
         if parent_report:
-            self.related_inline_field = [f for f, x in self.model._meta.get_fields_with_model() if f.rel and hasattr(f.rel, 'to') and f.rel.to is self.parent_report.model][0]
+            self.related_inline_field = [f for f, x in self.model._meta.get_fields_with_model() if
+                                         f.rel and hasattr(f.rel, 'to') and f.rel.to is self.parent_report.model][0]
             self.related_inline_accessor = self.related_inline_field.related.get_accessor_name()
-            self.related_fields = ["%s__%s" % (pfield.model._meta.module_name, attname) for pfield, attname in self.parent_report.model_fields if not isinstance(pfield, (str, unicode)) and  pfield.model == self.related_inline_field.rel.to]
+            self.related_fields = ["%s__%s" % (pfield.model._meta.module_name, attname) for pfield, attname in
+                                   self.parent_report.model_fields if not isinstance(pfield, (
+                    str, unicode)) and pfield.model == self.related_inline_field.rel.to]
             self.related_inline_filters = []
 
             for pfield, pattname in self.parent_report.model_fields:
@@ -286,7 +289,8 @@ class ReportAdmin(object):
                     try:
                         if pattname in cattname:
                             if pfield.model == cfield.model:
-                                self.related_inline_filters.append([pattname, cattname, self.parent_report.get_fields().index(pattname)])
+                                self.related_inline_filters.append(
+                                    [pattname, cattname, self.parent_report.get_fields().index(pattname)])
                     except Exception, e:
                         pass
 
@@ -473,8 +477,8 @@ class ReportAdmin(object):
                             if r.is_value():
                                 rows.remove(r)
 
-                if not context_request.GET.get('export', None) is None and not self.parent_report:
-                    if context_request.GET.get('export') == 'excel':
+                if (context_request.GET.get('excel') or context_request.GET.get('pdf')) and not self.parent_report:
+                    if context_request.GET.get('excel'):
                         book = Workbook(encoding='utf-8')
                         sheet1 = FitSheetWrapper(book.add_sheet(self.get_title()[:20]))
                         stylebold = easyxf('font: bold true; alignment:')
@@ -514,7 +518,7 @@ class ReportAdmin(object):
                         response['Content-Disposition'] = 'attachment; filename=%s.xls' % self.slug
                         book.save(response)
                         return response
-                    if context_request.GET.get('export') == 'pdf':
+                    if context_request.GET.get('pdf'):
                         inlines = [ir(self, context_request) for ir in self.inlines]
                         report_anchors = None
                         setattr(self, 'is_export', True)
@@ -630,11 +634,13 @@ class ReportAdmin(object):
 
     # @cache_return
     def get_groupby_fields(self):
-        return [(mfield, field, caption) for (mfield, field), caption in zip(self.model_fields, self.get_column_names()) if field in self.list_group_by]
+        return [(mfield, field, caption) for (mfield, field), caption in zip(self.model_fields, self.get_column_names())
+                if field in self.list_group_by]
 
     # @cache_return
     def get_serie_fields(self):
-        return [(index, mfield, field, caption) for index, ((mfield, field), caption) in enumerate(zip(self.model_fields, self.get_column_names())) if field in self.list_serie_fields]
+        return [(index, mfield, field, caption) for index, ((mfield, field), caption) in
+                enumerate(zip(self.model_fields, self.get_column_names())) if field in self.list_serie_fields]
 
     # @cache_return
     def get_form_groupby(self, request):
@@ -674,13 +680,13 @@ class ReportAdmin(object):
         form.is_valid()
 
         return form
-        
+
     def get_user_label(self, user):
         name = user.get_full_name()
         username = user.username
         return (name and name != username and '%s (%s)' % (name, username)
                 or username)
-                
+
     def check_for_widget(self, widget, field):
         if widget:
             for field_to_set_widget, widget in widget.iteritems():
@@ -720,7 +726,8 @@ class ReportAdmin(object):
                     else:
                         if not hasattr(model_field, 'formfield'):
                             field = forms.ModelChoiceField(queryset=model_field.model.objects.all())
-                            field.label = self.override_field_labels.get(k, base_label)(self, field) if k in self.override_field_labels else field_lookup
+                            field.label = self.override_field_labels.get(k, base_label)(self,
+                                                                                        field) if k in self.override_field_labels else field_lookup
 
                         elif isinstance(model_field, ForeignKey):
                             field = model_field.formfield()
@@ -733,7 +740,7 @@ class ReportAdmin(object):
                                     if query_field == k:
                                         for variable, value in query.iteritems():
                                             field.queryset = field.queryset.filter(**{variable: value})
-                                            
+
                         else:
                             field = model_field.formfield()
                             if self.list_filter_widget.has_key(k):
@@ -744,7 +751,7 @@ class ReportAdmin(object):
                                     field.choices = model_field.choices
                                     field.choices.insert(0, ('', '---------'))
                                     field.initial = ''
-                                    
+
                         field.label = force_unicode(_(field.label))
 
                 else:
@@ -872,7 +879,8 @@ class ReportAdmin(object):
                 filter_kwargs[kwarg] = self.override_field_filter_values.get(kwarg)(self, value)
 
         qs = self.get_query_set(filter_kwargs)
-        ffields = [f if 'self.' not in f else 'pk' for f in self.get_query_field_names() if f not in filter_related_fields]
+        ffields = [f if 'self.' not in f else 'pk' for f in self.get_query_field_names() if
+                   f not in filter_related_fields]
         extra_ffield = []
         backend = settings.DATABASES['default']['ENGINE'].split('.')[-1]
         for f in list(ffields):
@@ -926,10 +934,12 @@ class ReportAdmin(object):
 
         def get_with_dotvalues(resources):
             # {1: 'field.method'}
-            dot_indexes = dict([(index, dot_field) for index, dot_field in enumerate(self.get_fields()) if '.' in dot_field])
+            dot_indexes = dict(
+                [(index, dot_field) for index, dot_field in enumerate(self.get_fields()) if '.' in dot_field])
             dot_indexes_values = {}
 
-            dot_model_fields = [(index, model_field[0]) for index, model_field in enumerate(self.model_fields) if index in dot_indexes]
+            dot_model_fields = [(index, model_field[0]) for index, model_field in enumerate(self.model_fields) if
+                                index in dot_indexes]
             # [ 1, model_field] ]
             for index, model_field in dot_model_fields:
                 model_ids = set([row[index] for row in resources])
